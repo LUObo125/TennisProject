@@ -400,42 +400,43 @@ class CourtDetector:
 
             new_points = []
             # Find max intensity pixel near each point
-            for p in points_on_line:
-                p = (int(round(p[0])), int(round(p[1])))
-                top_y, top_x = max(p[1] - self.dist, 0), max(p[0] - self.dist, 0)
-                bottom_y, bottom_x = min(p[1] + self.dist, self.v_height), min(p[0] + self.dist, self.v_width)
-                patch = gray[top_y: bottom_y, top_x: bottom_x]
-                y, x = np.unravel_index(np.argmax(patch), patch.shape)
-                if patch[y, x] > 150:
-                    new_p = (x + top_x + 1, y + top_y + 1)
-                    new_points.append(new_p)
-                    cv2.circle(copy, p, 1, (255, 0, 0), 1)
-                    cv2.circle(copy, new_p, 1, (0, 0, 255), 1)
-            new_points = np.array(new_points, dtype=np.float32).reshape((-1, 1, 2))
-            # find line fitting the new points
-            [vx, vy, x, y] = cv2.fitLine(new_points, cv2.DIST_L2, 0, 0.01, 0.01)
-            new_lines.append(((int(x - vx * self.v_width), int(y - vy * self.v_width)),
-                              (int(x + vx * self.v_width), int(y + vy * self.v_width))))
-
+            try:
+                for p in points_on_line:
+                    p = (int(round(p[0])), int(round(p[1])))
+                    top_y, top_x = max(p[1] - self.dist, 0), max(p[0] - self.dist, 0)
+                    bottom_y, bottom_x = min(p[1] + self.dist, self.v_height), min(p[0] + self.dist, self.v_width)
+                    patch = gray[top_y: bottom_y, top_x: bottom_x]
+                    y, x = np.unravel_index(np.argmax(patch), patch.shape)
+                    if patch[y, x] > 150:
+                        new_p = (x + top_x + 1, y + top_y + 1)
+                        new_points.append(new_p)
+                        cv2.circle(copy, p, 1, (255, 0, 0), 1)
+                        cv2.circle(copy, new_p, 1, (0, 0, 255), 1)
+                new_points = np.array(new_points, dtype=np.float32).reshape((-1, 1, 2))
+                # find line fitting the new points
+                [vx, vy, x, y] = cv2.fitLine(new_points, cv2.DIST_L2, 0, 0.01, 0.01)
+                new_lines.append(((int(x - vx * self.v_width), int(y - vy * self.v_width)),
+                                (int(x + vx * self.v_width), int(y + vy * self.v_width))))
+            finally:
             # if less than 50 points were found detect court from the start instead of tracking
-            if len(new_points) < 50:
-                if self.dist > 20:
-                    cv2.imshow('court', copy)
-                    if cv2.waitKey(0) & 0xff == 27:
-                        cv2.destroyAllWindows()
-                    self.detect(frame)
-                    conf_points = np.array(self.court_reference.court_conf[self.best_conf], dtype=np.float32).reshape(
-                        (-1, 1, 2))
-                    self.frame_points = cv2.perspectiveTransform(conf_points,
-                                                                 self.court_warp_matrix[-1]).squeeze().round()
+                if len(new_points) < 50:
+                    if self.dist > 20:
+                        cv2.imshow('court', copy)
+                        if cv2.waitKey(0) & 0xff == 27:
+                            cv2.destroyAllWindows()
+                        self.detect(frame)
+                        conf_points = np.array(self.court_reference.court_conf[self.best_conf], dtype=np.float32).reshape(
+                            (-1, 1, 2))
+                        self.frame_points = cv2.perspectiveTransform(conf_points,
+                                                                    self.court_warp_matrix[-1]).squeeze().round()
 
-                    print('Smaller than 50')
-                    return
-                else:
-                    print('Court tracking failed, adding 5 pixels to dist')
-                    self.dist += 5
-                    self.track_court(frame)
-                    return
+                        print('Smaller than 50')
+                        return
+                    else:
+                        print('Court tracking failed, adding 5 pixels to dist')
+                        self.dist += 5
+                        self.track_court(frame)
+                        return
         # Find transformation from new lines
         i1 = line_intersection(new_lines[0], new_lines[2])
         i2 = line_intersection(new_lines[0], new_lines[3])

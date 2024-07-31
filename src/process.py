@@ -10,9 +10,9 @@ from scipy.signal import find_peaks
 from detection import DetectionModel, center_of_box
 from pose import PoseExtractor
 from smooth import Smooth
-from src.ball_detection import BallDetector
-from src.statistics import Statistics
-from src.stroke_recognition import ActionRecognition
+from ball_detection import BallDetector
+from statistics_re import Statistics
+from stroke_recognition import ActionRecognition
 from utils import get_video_properties, get_dtype, get_stickman_line_connection
 from court_detection import CourtDetector
 import matplotlib.pyplot as plt
@@ -380,7 +380,7 @@ def create_top_view(court_detector, detection_model):
 
 def video_process(video_path, show_video=False, include_video=True,
                   stickman=True, stickman_box=True, court=True,
-                  output_file='output', output_folder='output',
+                  output_file='output', output_folder='src/output',
                   smoothing=True, top_view=True):
     """
     Takes videos of one person as input, and calculate the body pose and face landmarks, and saves them as csv files.
@@ -404,7 +404,7 @@ def video_process(video_path, show_video=False, include_video=True,
     detection_model = DetectionModel(dtype=dtype)
     pose_extractor = PoseExtractor(person_num=1, box=stickman_box, dtype=dtype) if stickman else None
     stroke_recognition = ActionRecognition('storke_classifier_weights.pth')
-    ball_detector = BallDetector('saved states/tracknet_weights_2_classes.pth', out_channels=2)
+    ball_detector = BallDetector('src/saved states/tracknet_weights_2_classes.pth', out_channels=2)
 
     # Load videos from videos path
     video = cv2.VideoCapture(video_path)
@@ -499,7 +499,7 @@ def video_process(video_path, show_video=False, include_video=True,
 
 def main():
     s = time.time()
-    video_process(video_path='../videos/vid1.mp4', show_video=True, stickman=True, stickman_box=False, smoothing=True,
+    video_process(video_path='src/videos/vid1.mp4', show_video=True, stickman=True, stickman_box=False, smoothing=True,
                   court=True, top_view=True)
     print(f'Total computation time : {time.time() - s} seconds')
 
